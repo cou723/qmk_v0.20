@@ -17,6 +17,8 @@
 #include "stdbool.h"
 #include "action.h"
 #include "quantum_keycodes.h"
+#include "print.h"
+#include <stdlib.h>
 #include "os_detection.h"
 
 #include "layers.h"
@@ -55,7 +57,7 @@ S(KC_LCTL), KC_LCTL,KC_A,   KC_S,   KC_D,   KC_F,   KC_G,   KC_N,   C(A(KC_T)),
                                                                     KC_VOLU,KC_7,   KC_Y,  KC_U,   KC_I,   KC_O,   KC_P,   KC_LBRC,KC_BSLS,
                                                                     KC_VOLD,KC_B,   KC_H,  KC_J,   KC_K,   KC_L,   KC_SCLN,KC_QUOT,KC_ENT,
                                                                             KC_BSPC,KC_N,  KC_M,   KC_COMM,KC_DOT, KC_SLSH,KC_EQL,
-                                                                    KC_MINS,KC_UNDS,MO(NL),A(KC_LNG1)
+                                                                    KC_MINS,KC_UNDS,MO(NL),RALT_T(KC_LNG1)
                                                                 /* ----------------------------------------------------------------------------------- */
     ),
 
@@ -95,8 +97,8 @@ S(KC_LCTL), KC_LCTL,KC_A,   KC_S,   KC_D,   KC_F,   KC_G,   KC_N,   C(A(KC_T)),
     [MACHINE_CTRL_LAYER] = LAYOUT( /* MACHINE CTRL */
 /* LEFT-------------------------------------------------------------------------------- */
                     _______,_______,_______,_______,
-    L_RESET,  _______,_______,_______,_______,_______,_______,_______,_______,
-    _______,_______,_______,_______,_______,_______,_______,_______,_______,
+    QK_BOOT,_______,_______,_______,_______,_______,_______,_______,_______,
+    DB_TOGG,_______,_______,_______,_______,_______,_______,_______,_______,
             _______,_______,_______,_______,_______,_______,_______,
                                             _______,_______,_______,_______,
                                                                 /* RIGHT------------------------------------------------------------------------------- */
@@ -143,7 +145,7 @@ S(KC_LCTL), KC_LCTL,KC_A,   KC_S,   KC_D,   KC_F,   KC_G,   KC_N,   C(A(KC_T)),
     [REMOTE_4] = LAYOUT( /* MACHINE CTRL */
 /* LEFT-------------------------------------------------------------------------------- */
                     _______,_______,_______,_______,
-    L_RESET,  _______,_______,_______,_______,_______,_______,_______,_______,
+    QK_BOOT,  _______,_______,_______,_______,_______,_______,_______,_______,
     _______,_______,_______,_______,_______,_______,_______,_______,_______,
             _______,_______,_______,_______,_______,_______,_______,
                                             _______,_______,_______,_______,
@@ -233,8 +235,7 @@ void send_code_with_mod(uint16_t keycode, uint16_t mod) {
     unregister_code(mod);
 }
 
-static bool      ctrl_pressed = false;
-static MOD_STATE shift_state  = NONE;
+static MOD_STATE shift_state = NONE;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     // bool is_sent = false;
@@ -253,14 +254,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             break;
         case PAREN:
             if (record->event.pressed) {
-                register_code(KC_LBRC);
-                unregister_code(KC_LBRC);
-                register_code(KC_RBRC);
-                unregister_code(KC_RBRC);
+                tap_code(KC_LBRC);
+                tap_code(KC_RBRC);
             }
-            break;
-        case KC_LCTL:
-            ctrl_pressed = !!record->event.pressed;
             break;
         case P_SHIFT:
             if (record->event.pressed) {
@@ -275,17 +271,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 unregister_code(KC_LSFT);
             }
             return false;
-        case KC_U:
-            if (!ctrl_pressed) break;
-            if (record->event.pressed) {
-                if (shift_state == HOLD || shift_state == HOLD_PULSED_KEY) register_code(KC_LSFT);
-                register_code(KC_Z);
-            } else {
-                if (shift_state == HOLD || shift_state == HOLD_PULSED_KEY) unregister_code(KC_LSFT);
-                unregister_code(KC_Z);
-            }
-            return false;
-            break;
     }
 
     if (send_text(keycode, record)) return false;
@@ -302,10 +287,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         shift_state = NONE;
         return false;
     }
+    dprintf("%d", keymap_config.swap_lctl_lgui);
     return true;
 }
 
-bool get_ignore_mod_tap_interrupt(uint16_t keycode, keyrecord_t *record) {
+bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case LALT_T(KC_LNG2):
             return true;
@@ -316,11 +302,24 @@ bool get_ignore_mod_tap_interrupt(uint16_t keycode, keyrecord_t *record) {
     }
 }
 
-void matrix_init_user(void) {
-    wait_ms(400);
-    if (detected_host_os() == OS_IOS || detected_host_os() == OS_MACOS) {
-        tap_code16(QK_MAGIC_SWAP_LCTL_LGUI);
+void keyboard_post_init_user(void) {
+    debug_enable = true;
+    debug_matrix = true;
+
+    os_variant_t host = detected_host_os();
+    wait_ms(500);
+    if (host == OS_MACOS || host == OS_IOS) {
+        keymap_config.swap_lctl_lgui = true;
     }
+    print("ready");
 }
 
 void matrix_scan_user(void) {}
+
+const key_override_t ctrl_z_to_ctrl_u = ko_make_basic(MOD_MASK_CTRL, KC_U, C(KC_Z));
+
+// This globally defines all key overrides to be used
+const key_override_t **key_overrides = (const key_override_t *[]){
+    &ctrl_z_to_ctrl_u,
+    NULL // Null terminate the array of overrides!
+};
