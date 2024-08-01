@@ -109,9 +109,11 @@ words:
   - keymaps
   - keyrecord
   - LALT
+  - LCMD
   - LCTL
   - leds
   - LGUI
+  - LOPT
   - LSFT
   - LWIN
   - NLCK
