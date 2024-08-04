@@ -271,45 +271,50 @@ static MOD_STATE shift_state = NONE;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     uprintf("%d", is_called_keyboard_post_init_user);
+    // for mac
+    if (is_apple) {
+        switch (keycode) {
+            case MC_HOME:
+                if (record->event.pressed) {
+                    register_code(KC_LCMD);
+                    register_code(KC_LEFT);
+                } else {
+                    unregister_code(KC_LCMD);
+                    unregister_code(KC_LEFT);
+                }
+                return false;
+            case MAC_END:
+                if (record->event.pressed) {
+                    register_code(KC_LCMD);
+                    register_code(KC_RIGHT);
+                } else {
+                    unregister_code(KC_LCMD);
+                    unregister_code(KC_RIGHT);
+                }
+                return false;
+            case KC_LEFT:
+                if ((get_mods() & MOD_MASK_GUI)) {
+                    if (record->event.pressed) {
+                        unregister_code(KC_LCMD);
+                        tap_code_with_mod(KC_LEFT, KC_LOPT);
+                        register_code(KC_LCMD);
+                    }
+                    return false;
+                }
+                return true;
+            case KC_RIGHT:
+                if ((get_mods() & MOD_MASK_GUI)) {
+                    if (record->event.pressed) {
+                        unregister_code(KC_LCMD);
+                        tap_code_with_mod(KC_RIGHT, KC_LOPT);
+                        register_code(KC_LCMD);
+                    }
+                    return false;
+                }
+                return true;
+        }
+    }
     switch (keycode) {
-        case MC_HOME:
-            if (record->event.pressed) {
-                register_code(KC_LCMD);
-                register_code(KC_LEFT);
-            } else {
-                unregister_code(KC_LCMD);
-                unregister_code(KC_LEFT);
-            }
-            return false;
-        case MAC_END:
-            if (record->event.pressed) {
-                register_code(KC_LCMD);
-                register_code(KC_RIGHT);
-            } else {
-                unregister_code(KC_LCMD);
-                unregister_code(KC_RIGHT);
-            }
-            return false;
-        case KC_LEFT:
-            if (is_apple && (get_mods() & MOD_MASK_GUI)) {
-                if (record->event.pressed) {
-                    unregister_code(KC_LCMD);
-                    tap_code_with_mod(KC_LEFT, KC_LOPT);
-                    register_code(KC_LCMD);
-                }
-                return false;
-            }
-            return true;
-        case KC_RIGHT:
-            if (is_apple && (get_mods() & MOD_MASK_GUI)) {
-                if (record->event.pressed) {
-                    unregister_code(KC_LCMD);
-                    tap_code_with_mod(KC_RIGHT, KC_LOPT);
-                    register_code(KC_LCMD);
-                }
-                return false;
-            }
-            return true;
         case KC_NWIN:
             if (record->event.pressed)
                 open_window_changer();
