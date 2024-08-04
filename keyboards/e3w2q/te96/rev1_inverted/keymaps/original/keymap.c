@@ -277,29 +277,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             case MC_HOME:
                 if (record->event.pressed) {
                     if ((get_mods() & MOD_MASK_GUI)) {
-                        register_code(KC_UP);
+                        tap_code(KC_UP);
                     } else {
-                        register_code(KC_LCMD);
-                        register_code(KC_LEFT);
+                        register_code(KC_LCTL);
+                        tap_code(KC_A);
+                        unregister_code(KC_LCTL);
                     }
-                } else {
-                    unregister_code(KC_UP);
-                    unregister_code(KC_LCMD);
-                    unregister_code(KC_LEFT);
                 }
                 return false;
             case MAC_END:
                 if (record->event.pressed) {
                     if ((get_mods() & MOD_MASK_GUI)) {
-                        register_code(KC_DOWN);
+                        tap_code(KC_DOWN);
                     } else {
-                        register_code(KC_LCMD);
-                        register_code(KC_RIGHT);
+                        register_code(KC_LCTL);
+                        register_code(KC_E);
+                        unregister_code(KC_LCTL);
                     }
-                } else {
-                    unregister_code(KC_DOWN);
-                    unregister_code(KC_LCMD);
-                    unregister_code(KC_RIGHT);
                 }
                 return false;
             case KC_LEFT:
@@ -308,6 +302,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                         unregister_code(KC_LCMD);
                         tap_code_with_mod(KC_LEFT, KC_LOPT);
                         register_code(KC_LCMD);
+                    }
+                    return false;
+                }
+                if (get_mods() & MOD_MASK_ALT) {
+                    if (record->event.pressed) {
+                        unregister_code(KC_LALT);
+                        tap_code_with_mod(KC_LEFT, KC_LCMD);
+                        register_code(KC_LALT);
                     }
                     return false;
                 }
@@ -414,7 +416,7 @@ void keyboard_post_init_user(void) {
 void matrix_scan_user(void) {}
 
 const key_override_t ctrl_z_to_ctrl_u = ko_make_basic(MOD_MASK_CTRL, KC_U, C(KC_Z));
-const key_override_t cmd_z_to_cmd_u = ko_make_basic(MOD_MASK_GUI, KC_U, LCMD(KC_Z));
+const key_override_t cmd_z_to_cmd_u   = ko_make_basic(MOD_MASK_GUI, KC_U, LCMD(KC_Z));
 
 // This globally defines all key overrides to be used
 const key_override_t **key_overrides = (const key_override_t *[]){
