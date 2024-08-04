@@ -276,9 +276,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         switch (keycode) {
             case MC_HOME:
                 if (record->event.pressed) {
-                    register_code(KC_LCMD);
-                    register_code(KC_LEFT);
+                    if ((get_mods() & MOD_MASK_GUI)) {
+                        register_code(KC_UP);
+                    } else {
+                        register_code(KC_LCMD);
+                        register_code(KC_LEFT);
+                    }
                 } else {
+                    unregister_code(KC_UP);
                     unregister_code(KC_LCMD);
                     unregister_code(KC_LEFT);
                 }
