@@ -285,9 +285,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 return false;
             case MAC_END:
                 if (record->event.pressed) {
-                    register_code(KC_LCMD);
-                    register_code(KC_RIGHT);
+                    if ((get_mods() & MOD_MASK_GUI)) {
+                        register_code(KC_DOWN);
+                    } else {
+                        register_code(KC_LCMD);
+                        register_code(KC_RIGHT);
+                    }
                 } else {
+                    unregister_code(KC_DOWN);
                     unregister_code(KC_LCMD);
                     unregister_code(KC_RIGHT);
                 }
@@ -404,9 +409,11 @@ void keyboard_post_init_user(void) {
 void matrix_scan_user(void) {}
 
 const key_override_t ctrl_z_to_ctrl_u = ko_make_basic(MOD_MASK_CTRL, KC_U, C(KC_Z));
+const key_override_t cmd_z_to_cmd_u = ko_make_basic(MOD_MASK_GUI, KC_U, LCMD(KC_Z));
 
 // This globally defines all key overrides to be used
 const key_override_t **key_overrides = (const key_override_t *[]){
     &ctrl_z_to_ctrl_u,
+    &cmd_z_to_cmd_u,
     NULL,
 };
