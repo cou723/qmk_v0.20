@@ -27,7 +27,7 @@
 static bool is_apple                          = false;
 static int  is_called_keyboard_post_init_user = 0;
 
-enum custom_keycodes { RGBRST = SAFE_RANGE, KC_NWIN, KC_BWIN, KC_WSS, PAREN, EMAIL_1, EMAIL_2, EMAIL_3, UNI_NUM, L_RESET, KC_RNWIN, NAME, BIRTH, P_SHIFT, MC_HOME, MAC_END };
+enum custom_keycodes { RGBRST = SAFE_RANGE, KC_NWIN, KC_BWIN, KC_WSS, PAREN, EMAIL_1, EMAIL_2, EMAIL_3, UNI_NUM, L_RESET, KC_RNWIN, NAME, BIRTH, P_SHIFT, MC_HOME, MAC_END, KC_MCWIN };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // clang-format off
@@ -37,7 +37,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_ESC, KC_TAB, KC_Q,   KC_W,   KC_E,   KC_R,   KC_T,   KC_5,   KC_6,
 S(KC_LCTL), KC_LCTL,KC_A,   KC_S,   KC_D,   KC_F,   KC_G,   KC_N,   C(A(KC_T)),
             KC_LSFT,KC_Z,   KC_X,   KC_C,   KC_V,   KC_B,   KC_LWIN,
-                                            LALT_T(KC_LNG2),MO(CL), KC_SPC, P_SHIFT,
+                                          LALT_T(KC_LNG2),MO(CL), KC_SPC, P_SHIFT,
                                                                 /* RIGHT------------------------------------------------------------------------------- */
                                                                             KC_MUTE,KC_7,  KC_8,   KC_9,   KC_0,   KC_MINS,
                                                                     KC_VOLU,KC_7,   KC_Y,  KC_U,   KC_I,   KC_O,   KC_P,   KC_LBRC,KC_BSLS,
@@ -156,7 +156,7 @@ S(KC_LCMD), KC_LCMD,KC_A,   KC_S,   KC_D,   KC_F,   KC_G,   KC_N,   C(A(KC_T)),
                                                                 LCTL(KC_TAB),KC_F7,  _______,MC_HOME,KC_UP,  MAC_END,KC_GRV, PAREN,  KC_F12,
                                                              S(LCTL(KC_TAB)),DF(RCL),_______,KC_LEFT,KC_DOWN,KC_RGHT,KC_ENT, KC_EQL, KC_CAPS,
                                                                              KC_LWIN,KC_BSPC,KC_DEL, KC_PGUP,KC_PGDN,_______,KC_APP,
-                                                                     _______,KC_NWIN,MO(MML),RALT_T(KC_LNG1)
+                                                                     _______,KC_MCWIN,MO(MML),RALT_T(KC_LNG1)
                                                                 /* --------------------------------------------------------------------------------------- */
   ),
 
@@ -267,7 +267,8 @@ void open_window_changer_remote(void) {
 // process_record_user utils //////////////////////////////////////////////////
 
 typedef enum { NONE, HOLD, HOLD_PULSED_KEY, RELEASE } MOD_STATE;
-static MOD_STATE shift_state = NONE;
+static MOD_STATE shift_state            = NONE;
+static bool      is_open_window_changer = false;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     uprintf("%d", is_called_keyboard_post_init_user);
@@ -291,7 +292,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                         tap_code(KC_DOWN);
                     } else {
                         register_code(KC_LCTL);
-                        register_code(KC_E);
+                        tap_code(KC_E);
                         unregister_code(KC_LCTL);
                     }
                 }
@@ -305,11 +306,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     }
                     return false;
                 }
-                if (get_mods() & MOD_MASK_ALT) {
+                if (get_mods() & MOD_MASK_ALT && !is_open_window_changer) {
                     if (record->event.pressed) {
                         unregister_code(KC_LALT);
                         tap_code_with_mod(KC_LEFT, KC_LCMD);
-                        register_code(KC_LALT);
                     }
                     return false;
                 }
@@ -319,6 +319,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     if (record->event.pressed) {
                         unregister_code(KC_LCMD);
                         tap_code_with_mod(KC_RIGHT, KC_LOPT);
+                        register_code(KC_LCMD);
+                    }
+                    return false;
+                }
+                if (get_mods() & MOD_MASK_ALT && !is_open_window_changer) {
+                    if (record->event.pressed) {
+                        unregister_code(KC_LALT);
+                        tap_code_with_mod(KC_RIGHT, KC_LCMD);
+                    }
+                    return false;
+                }
+                return true;
+            case KC_BACKSPACE:
+                if ((get_mods() & MOD_MASK_GUI)) {
+                    if (record->event.pressed) {
+                        unregister_code(KC_LCMD);
+                        tap_code_with_mod(KC_BACKSPACE, KC_LOPT);
                         register_code(KC_LCMD);
                     }
                     return false;
@@ -338,6 +355,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 open_window_changer_remote();
             else
                 unregister_code(KC_LALT);
+            break;
+        case KC_MCWIN:
+            if (record->event.pressed) {
+                register_code(KC_LALT);
+                tap_code(KC_TAB);
+                is_open_window_changer = true;
+            } else {
+                unregister_code(KC_LALT);
+                is_open_window_changer = false;
+            }
             break;
         case PAREN:
             if (record->event.pressed) {
